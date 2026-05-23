@@ -1,3 +1,14 @@
+{
+  "name": "Quiz Master",
+  "short_name": "QuizMaster",
+  "description": "400 desafios em 4 nichos. Prove seu conhecimento fase a fase.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "background_color": "#050510",
+  "theme_color": "#050510",
+  "orientation": "portrait",
+  "lang": "pt-BR",
   "icons": [
     {
       "src": "icon-192.png",
@@ -12,3 +23,4 @@
       "purpose": "any maskable"
     }
   ]
+}
