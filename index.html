@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quiz Master</title>
+  <meta name="description" content="400 desafios em 4 nichos. Prove seu conhecimento fase a fase." />
+  <meta name="theme-color" content="#050510" />
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #050510; }
+  </style>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useCallback } = React;
+
+const GAME_DATA = {
+  nichos: [
+    {
+      id: "tech", name: "Tecnologia", emoji: "💻",
+      color: "#00e5ff", glow: "rgba(0,229,255,0.4)",
+      gradient: "linear-gradient(135deg,#00e5ff22,#00b4d822)",
+      phases: [
+        { phase:1, title:"Hardware Básico", questions:[
+          {q:"Qual componente é o 'cérebro' do computador?",a:"processador"},
+          {q:"Memória de acesso rápido e temporária?",a:"ram"},
+          {q:"Dispositivo que armazena dados permanentemente (sigla)?",a:"hd"},
+          {q:"Placa principal que conecta todos os componentes?",a:"placa mãe"},
+          {q:"Unidade que converte energia elétrica para o PC?",a:"fonte"},
+          {q:"Dispositivo que exibe a imagem na tela?",a:"monitor"},
+          {q:"Componente responsável pelos gráficos (sigla)?",a:"gpu"},
+          {q:"Dispositivo de entrada mais comum após o teclado?",a:"mouse"},
+          {q:"Sigla do armazenamento de estado sólido?",a:"ssd"},
+          {q:"Quantos bits tem 1 byte?",a:"8"},
+        ]},
+        { phase:2, title:"Internet & Redes", questions:[
+          {q:"Protocolo base da web (sigla)?",a:"http"},
+          {q:"Versão segura do HTTP?",a:"https"},
+          {q:"Endereço único de um site na internet?",a:"url"},
+          {q:"Sigla do protocolo de e-mail de envio?",a:"smtp"},
+          {q:"Dispositivo que conecta redes diferentes?",a:"roteador"},
+          {q:"Rede local de computadores (sigla)?",a:"lan"},
+          {q:"Sistema que traduz nomes de domínio em IPs (sigla)?",a:"dns"},
+          {q:"Protocolo de transferência de arquivos (sigla)?",a:"ftp"},
+          {q:"Velocidade de rede medida em?",a:"mbps"},
+          {q:"Endereço numérico de um dispositivo na rede (sigla)?",a:"ip"},
+        ]},
+        { phase:3, title:"Sistemas Operacionais", questions:[
+          {q:"Sistema operacional da Microsoft?",a:"windows"},
+          {q:"Sistema operacional da Apple para Mac?",a:"macos"},
+          {q:"Sistema operacional open source mais popular?",a:"linux"},
+          {q:"Núcleo do sistema operacional?",a:"kernel"},
+          {q:"Interface de linha de comando?",a:"terminal"},
+          {q:"Pasta raiz no Linux?",a:"/"},
+          {q:"Sistema operacional do iPhone?",a:"ios"},
+          {q:"Sistema operacional do Android é baseado em?",a:"linux"},
+          {q:"Atalho universal para copiar?",a:"ctrl c"},
+          {q:"Extensão de executáveis no Windows?",a:"exe"},
+        ]},
+        { phase:4, title:"Programação", questions:[
+          {q:"Linguagem da web para estrutura?",a:"html"},
+          {q:"Linguagem da web para estilo?",a:"css"},
+          {q:"Linguagem de script do navegador?",a:"javascript"},
+          {q:"Linguagem da cobra (símbolo)?",a:"python"},
+          {q:"Linguagem da xícara de café (símbolo)?",a:"java"},
+          {q:"Conjunto de instruções para o computador?",a:"algoritmo"},
+          {q:"Erro no código?",a:"bug"},
+          {q:"Processo de encontrar e corrigir erros?",a:"debug"},
+          {q:"Repetição de código?",a:"loop"},
+          {q:"Função que chama a si mesma?",a:"recursão"},
+        ]},
+        { phase:5, title:"Banco de Dados", questions:[
+          {q:"Linguagem de consulta a bancos de dados (sigla)?",a:"sql"},
+          {q:"Banco de dados não relacional mais famoso?",a:"mongodb"},
+          {q:"Tabela de banco relacional é composta de?",a:"linhas e colunas"},
+          {q:"Chave que identifica unicamente um registro?",a:"chave primária"},
+          {q:"Operação de busca em SQL?",a:"select"},
+          {q:"Operação de inserir em SQL?",a:"insert"},
+          {q:"Operação de deletar em SQL?",a:"delete"},
+          {q:"Banco de dados da Oracle em nuvem?",a:"oracle"},
+          {q:"Banco open source mais popular?",a:"mysql"},
+          {q:"Sigla para sistema gerenciador de banco de dados?",a:"sgbd"},
+        ]},
+        { phase:6, title:"Segurança Digital", questions:[
+          {q:"Software malicioso que se replica?",a:"vírus"},
+          {q:"Ataque que tenta enganar o usuário?",a:"phishing"},
+          {q:"Programa que pede resgate por dados?",a:"ransomware"},
+          {q:"Processo de embaralhar dados?",a:"criptografia"},
+          {q:"Barreira de proteção de rede?",a:"firewall"},
+          {q:"Verificação em dois passos (sigla)?",a:"2fa"},
+          {q:"Ataque que sobrecarrega servidor (sigla)?",a:"ddos"},
+          {q:"Programa que monitora o usuário secretamente?",a:"spyware"},
+          {q:"Senha padrão do roteador mais comum?",a:"admin"},
+          {q:"Protocolo seguro de conexão remota?",a:"ssh"},
+        ]},
+        { phase:7, title:"Cloud & DevOps", questions:[
+          {q:"Nuvem da Amazon (sigla)?",a:"aws"},
+          {q:"Nuvem do Google (sigla)?",a:"gcp"},
+          {q:"Nuvem da Microsoft?",a:"azure"},
+          {q:"Ferramenta de containerização mais popular?",a:"docker"},
+          {q:"Orquestrador de containers do Google?",a:"kubernetes"},
+          {q:"Sistema de controle de versão mais usado?",a:"git"},
+          {q:"Plataforma de repositórios Git mais famosa?",a:"github"},
+          {q:"Integração contínua (sigla)?",a:"ci"},
+          {q:"Entrega contínua (sigla)?",a:"cd"},
+          {q:"Filosofia dev + operações?",a:"devops"},
+        ]},
+        { phase:8, title:"Inteligência Artificial", questions:[
+          {q:"Sigla de inteligência artificial?",a:"ia"},
+          {q:"Subárea da IA que aprende com dados?",a:"machine learning"},
+          {q:"IA que aprende em camadas?",a:"deep learning"},
+          {q:"Rede neural inspirada no cérebro?",a:"rede neural"},
+          {q:"IA da OpenAI mais famosa?",a:"chatgpt"},
+          {q:"IA da Google para conversas?",a:"gemini"},
+          {q:"IA da Anthropic?",a:"claude"},
+          {q:"Processamento de linguagem natural (sigla)?",a:"nlp"},
+          {q:"Modelo de linguagem grande (sigla)?",a:"llm"},
+          {q:"Criação de imagens por IA é chamada de?",a:"ia generativa"},
+        ]},
+        { phase:9, title:"Mobile & Apps", questions:[
+          {q:"Loja de apps da Apple?",a:"app store"},
+          {q:"Loja de apps do Android?",a:"google play"},
+          {q:"App desenvolvido para um único SO?",a:"nativo"},
+          {q:"App que funciona em qualquer navegador?",a:"web app"},
+          {q:"Framework React para mobile?",a:"react native"},
+          {q:"Framework Google para mobile multiplataforma?",a:"flutter"},
+          {q:"App que funciona offline?",a:"pwa"},
+          {q:"Arquivo de instalação Android?",a:"apk"},
+          {q:"Linguagem oficial de desenvolvimento iOS?",a:"swift"},
+          {q:"Linguagem oficial de desenvolvimento Android?",a:"kotlin"},
+        ]},
+        { phase:10, title:"Inovação & Futuro", questions:[
+          {q:"Internet de objetos físicos conectados (sigla)?",a:"iot"},
+          {q:"Realidade aumentada (sigla)?",a:"ra"},
+          {q:"Realidade virtual (sigla)?",a:"rv"},
+          {q:"Tecnologia de registro descentralizado?",a:"blockchain"},
+          {q:"Moeda digital descentralizada?",a:"criptomoeda"},
+          {q:"Computação usando mecânica quântica?",a:"quantum computing"},
+          {q:"Impressão de objetos físicos em 3D?",a:"impressão 3d"},
+          {q:"Veículo que dirige sozinho?",a:"autônomo"},
+          {q:"Metaverso é um mundo?",a:"virtual"},
+          {q:"Tecnologia 5G é a quinta geração de?",a:"redes móveis"},
+        ]},
+      ],
+    },
+    {
+      id:"science", name:"Ciências", emoji:"🔬",
+      color:"#69ff47", glow:"rgba(105,255,71,0.4)",
+      gradient:"linear-gradient(135deg,#69ff4722,#00e67622)",
+      phases:[
+        { phase:1, title:"Biologia Básica", questions:[
+          {q:"Unidade básica da vida?",a:"célula"},
+          {q:"Organela responsável pela respiração celular?",a:"mitocôndria"},
+          {q:"Processo de plantas que usa luz solar?",a:"fotossíntese"},
+          {q:"Material genético dentro do núcleo?",a:"dna"},
+          {q:"Classificação: reino dos fungos?",a:"fungi"},
+          {q:"Processo de divisão celular?",a:"mitose"},
+          {q:"Divisão celular para reprodução?",a:"meiose"},
+          {q:"Proteínas que aceleram reações químicas?",a:"enzimas"},
+          {q:"Sistema de transporte do corpo humano?",a:"circulatório"},
+          {q:"Órgão que filtra o sangue?",a:"rim"},
+        ]},
+        { phase:2, title:"Química", questions:[
+          {q:"Tabela que organiza os elementos?",a:"tabela periódica"},
+          {q:"Símbolo do ouro?",a:"au"},
+          {q:"Símbolo do ferro?",a:"fe"},
+          {q:"Fórmula da água?",a:"h2o"},
+          {q:"Fórmula do gás carbônico?",a:"co2"},
+          {q:"Número atômico do hidrogênio?",a:"1"},
+          {q:"Elemento mais abundante na Terra?",a:"oxigênio"},
+          {q:"Ligação entre átomos compartilhando elétrons?",a:"covalente"},
+          {q:"pH neutro tem valor?",a:"7"},
+          {q:"Reação que libera energia?",a:"exotérmica"},
+        ]},
+        { phase:3, title:"Física Clássica", questions:[
+          {q:"Unidade de força no SI?",a:"newton"},
+          {q:"Velocidade da luz (aprox.) em km/s?",a:"300000"},
+          {q:"Fórmula da velocidade?",a:"v = d/t"},
+          {q:"Lei que relaciona força massa aceleração?",a:"segunda lei de newton"},
+          {q:"Energia armazenada por posição?",a:"potencial"},
+          {q:"Energia do movimento?",a:"cinética"},
+          {q:"Unidade de temperatura absoluta?",a:"kelvin"},
+          {q:"Fenômeno de dobramento da luz?",a:"refração"},
+          {q:"Campo criado por cargas em movimento?",a:"magnético"},
+          {q:"Unidade de frequência?",a:"hertz"},
+        ]},
+        { phase:4, title:"Astronomia", questions:[
+          {q:"Estrela mais próxima da Terra?",a:"sol"},
+          {q:"Planeta mais próximo do Sol?",a:"mercúrio"},
+          {q:"Planeta mais distante do Sol?",a:"netuno"},
+          {q:"Satélite natural da Terra?",a:"lua"},
+          {q:"Galáxia onde vivemos?",a:"via láctea"},
+          {q:"Explosão que originou o universo?",a:"big bang"},
+          {q:"Objeto com gravidade tão forte que luz não escapa?",a:"buraco negro"},
+          {q:"Planeta com anéis mais famosos?",a:"saturno"},
+          {q:"Rocha espacial que cai na Terra?",a:"meteorito"},
+          {q:"Unidade de distância espacial?",a:"ano-luz"},
+        ]},
+        { phase:5, title:"Ecologia", questions:[
+          {q:"Conjunto de seres vivos e ambiente?",a:"ecossistema"},
+          {q:"Relação entre predador e presa?",a:"predatismo"},
+          {q:"Relação onde ambos se beneficiam?",a:"mutualismo"},
+          {q:"Camada que protege da radiação UV?",a:"ozônio"},
+          {q:"Efeito do aquecimento global?",a:"efeito estufa"},
+          {q:"Energia solar que alimenta a cadeia?",a:"produtor"},
+          {q:"Animal que come apenas plantas?",a:"herbívoro"},
+          {q:"Animal que come apenas carne?",a:"carnívoro"},
+          {q:"Decomposição de restos orgânicos?",a:"decomposição"},
+          {q:"Ciclo da água na natureza?",a:"ciclo hidrológico"},
+        ]},
+        { phase:6, title:"Corpo Humano", questions:[
+          {q:"Maior órgão do corpo humano?",a:"pele"},
+          {q:"Osso mais longo do corpo?",a:"fêmur"},
+          {q:"Órgão que bombeia o sangue?",a:"coração"},
+          {q:"Órgão da respiração?",a:"pulmão"},
+          {q:"Órgão que produz bile?",a:"fígado"},
+          {q:"Glândula que regula metabolismo?",a:"tireoide"},
+          {q:"Célula do sangue que transporta oxigênio?",a:"hemácia"},
+          {q:"Quantos ossos tem o adulto?",a:"206"},
+          {q:"Sistema de defesa do corpo?",a:"imunológico"},
+          {q:"Hormônio da insulina produzido pelo?",a:"pâncreas"},
+        ]},
+        { phase:7, title:"Genética", questions:[
+          {q:"Pai da genética?",a:"mendel"},
+          {q:"Molécula que carrega informação genética?",a:"dna"},
+          {q:"Unidade de herança genética?",a:"gene"},
+          {q:"Par de cromossomos humanos?",a:"23"},
+          {q:"Variação permanente no DNA?",a:"mutação"},
+          {q:"Clone é uma cópia?",a:"genética"},
+          {q:"Código genético é formado por?",a:"bases nitrogenadas"},
+          {q:"Característica que se expressa?",a:"dominante"},
+          {q:"Característica que se oculta?",a:"recessiva"},
+          {q:"Mapeamento do genoma completo?",a:"sequenciamento"},
+        ]},
+        { phase:8, title:"Física Quântica", questions:[
+          {q:"Pai da física quântica?",a:"planck"},
+          {q:"Partícula de luz?",a:"fóton"},
+          {q:"Princípio da incerteza de?",a:"heisenberg"},
+          {q:"Experimento do gato famoso da quântica?",a:"schrödinger"},
+          {q:"Partícula com carga negativa?",a:"elétron"},
+          {q:"Partícula com carga positiva?",a:"próton"},
+          {q:"Partícula sem carga?",a:"nêutron"},
+          {q:"Superposição quântica permite estados?",a:"simultâneos"},
+          {q:"Emaranhamento quântico é chamado de?",a:"entrelaçamento"},
+          {q:"Unidade mínima de energia?",a:"quanta"},
+        ]},
+        { phase:9, title:"Química Orgânica", questions:[
+          {q:"Elemento base da química orgânica?",a:"carbono"},
+          {q:"Hidrocarboneto mais simples?",a:"metano"},
+          {q:"Álcool presente nas bebidas?",a:"etanol"},
+          {q:"Gordura é um tipo de?",a:"lipídio"},
+          {q:"Açúcar simples?",a:"glicose"},
+          {q:"Monômeros de proteínas?",a:"aminoácidos"},
+          {q:"Reação de formação de éster?",a:"esterificação"},
+          {q:"Gasolina é um?",a:"combustível fóssil"},
+          {q:"Polímero natural mais abundante?",a:"celulose"},
+          {q:"Vitamina da fruta cítrica (sigla)?",a:"vitamina c"},
+        ]},
+        { phase:10, title:"Ciência Aplicada", questions:[
+          {q:"Energia produzida pelo vento?",a:"eólica"},
+          {q:"Energia do Sol?",a:"solar"},
+          {q:"Energia do calor interno da Terra?",a:"geotérmica"},
+          {q:"Vacina introduz o quê no corpo?",a:"antígeno"},
+          {q:"Antibiótico combate?",a:"bactérias"},
+          {q:"Remédio que combate vírus?",a:"antiviral"},
+          {q:"Raio-X usa que tipo de radiação?",a:"ionizante"},
+          {q:"Ressonância magnética usa?",a:"campo magnético"},
+          {q:"Impressão digital como biometria é única para cada?",a:"pessoa"},
+          {q:"Nanotecnologia trabalha em escala de?",a:"nanômetros"},
+        ]},
+      ],
+    },
+    {
+      id:"history", name:"História", emoji:"🏛️",
+      color:"#ffb703", glow:"rgba(255,183,3,0.4)",
+      gradient:"linear-gradient(135deg,#ffb70322,#fb8b2422)",
+      phases:[
+        { phase:1, title:"Brasil Colonial", questions:[
+          {q:"Ano de descobrimento do Brasil?",a:"1500"},
+          {q:"Navegador que descobriu o Brasil?",a:"cabral"},
+          {q:"Povo nativo do Brasil?",a:"indígenas"},
+          {q:"Primeiro produto de exportação do Brasil?",a:"pau-brasil"},
+          {q:"Capitanias foram divididas em quantas?",a:"15"},
+          {q:"Missões jesuítas catequizavam os?",a:"índios"},
+          {q:"Escravidão africana começou no Brasil em que século?",a:"16"},
+          {q:"Período das capitanias hereditárias?",a:"capitanias hereditárias"},
+          {q:"Primeira capital do Brasil?",a:"salvador"},
+          {q:"Ciclo econômico após o pau-brasil?",a:"cana-de-açúcar"},
+        ]},
+        { phase:2, title:"Brasil Império", questions:[
+          {q:"Independência do Brasil em que ano?",a:"1822"},
+          {q:"Quem proclamou a independência?",a:"dom pedro i"},
+          {q:"Grito da independência aconteceu às margens do?",a:"ipiranga"},
+          {q:"Período Regencial foi de 1831 a?",a:"1840"},
+          {q:"Dom Pedro II era filho de?",a:"dom pedro i"},
+          {q:"Guerra do Paraguai terminou em?",a:"1870"},
+          {q:"Lei que aboliu escravidão no Brasil?",a:"lei áurea"},
+          {q:"Lei áurea foi assinada em?",a:"1888"},
+          {q:"Quem assinou a Lei Áurea?",a:"princesa isabel"},
+          {q:"Fim do Império foi em?",a:"1889"},
+        ]},
+        { phase:3, title:"Brasil República", questions:[
+          {q:"Quem proclamou a República?",a:"deodoro da fonseca"},
+          {q:"República Velha durou de 1889 a?",a:"1930"},
+          {q:"Política do café-com-leite alternava entre MG e?",a:"são paulo"},
+          {q:"Revolução de 1930 levou ao poder?",a:"getúlio vargas"},
+          {q:"Estado Novo durou de 1937 a?",a:"1945"},
+          {q:"Capital passou de RJ para Brasília em?",a:"1960"},
+          {q:"Presidente que construiu Brasília?",a:"jk"},
+          {q:"Golpe militar no Brasil foi em?",a:"1964"},
+          {q:"Diretas Já foi um movimento de?",a:"redemocratização"},
+          {q:"Nova constituição do Brasil foi promulgada em?",a:"1988"},
+        ]},
+        { phase:4, title:"Mundo Antigo", questions:[
+          {q:"Civilização que construiu as pirâmides?",a:"egípcios"},
+          {q:"Rio sagrado do Egito?",a:"nilo"},
+          {q:"Cidade-estado mais importante da Grécia?",a:"atenas"},
+          {q:"Filósofo grego mestre de Platão?",a:"sócrates"},
+          {q:"Imperador de Roma que cruzou o Rubicão?",a:"júlio césar"},
+          {q:"Cidade que rivalizou com Roma?",a:"cartago"},
+          {q:"Pirâmide de Quéops fica em?",a:"gizé"},
+          {q:"Civilização do rio Indo?",a:"harappa"},
+          {q:"Grande Muralha foi construída pela?",a:"china"},
+          {q:"Alexandre Magno foi rei da?",a:"macedônia"},
+        ]},
+        { phase:5, title:"Idade Média", questions:[
+          {q:"Queda de Roma foi em?",a:"476"},
+          {q:"Cruzadas eram para libertar?",a:"jerusalém"},
+          {q:"Peste Negra matou boa parte da Europa no século?",a:"14"},
+          {q:"Sistema econômico medieval?",a:"feudalismo"},
+          {q:"Rei que unificou francos?",a:"carlos magno"},
+          {q:"Cidade símbolo do Islã no século VII?",a:"medina"},
+          {q:"Fundador do Islã?",a:"maomé"},
+          {q:"Imprensa foi inventada por?",a:"gutenberg"},
+          {q:"Renascimento começou na?",a:"itália"},
+          {q:"Fim da Idade Média convencionalmente em?",a:"1453"},
+        ]},
+        { phase:6, title:"Grandes Guerras", questions:[
+          {q:"Primeira Guerra Mundial durou de 1914 a?",a:"1918"},
+          {q:"Assassinato que iniciou a 1ª GM?",a:"franz ferdinand"},
+          {q:"Segunda Guerra Mundial iniciou em?",a:"1939"},
+          {q:"Bomba atômica foi lançada em?",a:"hiroshima"},
+          {q:"Segunda Guerra terminou em?",a:"1945"},
+          {q:"Líder nazista da Alemanha?",a:"hitler"},
+          {q:"Líder da URSS na 2ª GM?",a:"stálin"},
+          {q:"Dia D foi o desembarque em?",a:"normandia"},
+          {q:"País que capitulou primeiro na 2ª GM?",a:"alemanha"},
+          {q:"ONU foi criada após a?",a:"segunda guerra"},
+        ]},
+        { phase:7, title:"Guerra Fria", questions:[
+          {q:"Dois blocos opostos: EUA e?",a:"urss"},
+          {q:"Muro que dividiu a Alemanha?",a:"berlim"},
+          {q:"Corrida ao espaço começou com o?",a:"sputnik"},
+          {q:"Crise dos mísseis foi em?",a:"cuba"},
+          {q:"Primeiro homem na Lua?",a:"armstrong"},
+          {q:"Ano da queda do muro de Berlim?",a:"1989"},
+          {q:"Dissolução da URSS em?",a:"1991"},
+          {q:"Pacto militar americano?",a:"otan"},
+          {q:"Pacto militar soviético?",a:"varsóvia"},
+          {q:"Presidente americano na crise cubana?",a:"kennedy"},
+        ]},
+        { phase:8, title:"América Latina", questions:[
+          {q:"Libertador da América do Sul?",a:"simón bolívar"},
+          {q:"País de Simón Bolívar?",a:"venezuela"},
+          {q:"Revolução Cubana foi liderada por?",a:"fidel castro"},
+          {q:"Ano da Revolução Cubana?",a:"1959"},
+          {q:"Ditadura militar mais longa da Argentina?",a:"1976 a 1983"},
+          {q:"Presidente chileno derrubado em 1973?",a:"allende"},
+          {q:"País mais populoso da América Latina?",a:"brasil"},
+          {q:"Independência do México foi em?",a:"1821"},
+          {q:"Canal que une Atlântico e Pacífico?",a:"panamá"},
+          {q:"Civilização inca tinha capital em?",a:"cusco"},
+        ]},
+        { phase:9, title:"África & Ásia", questions:[
+          {q:"Apartheid foi praticado na?",a:"áfrica do sul"},
+          {q:"Líder que combateu o apartheid?",a:"mandela"},
+          {q:"Independência da Índia liderada por?",a:"gandhi"},
+          {q:"Revolução Cultural foi na?",a:"china"},
+          {q:"Lider da Revolução Chinesa?",a:"mao tsé-tung"},
+          {q:"Colonização europeia da África chamada de?",a:"neocolonialismo"},
+          {q:"País africano nunca colonizado?",a:"etiópia"},
+          {q:"Partição da Índia criou o?",a:"paquistão"},
+          {q:"Guerra da Coreia dividiu o país em?",a:"norte e sul"},
+          {q:"Hiroshima está no?",a:"japão"},
+        ]},
+        { phase:10, title:"Mundo Contemporâneo", questions:[
+          {q:"Atentado de 11 de setembro foi em?",a:"2001"},
+          {q:"Queda do muro de Berlim unificou a?",a:"alemanha"},
+          {q:"União Europeia foi criada em?",a:"1993"},
+          {q:"Moeda única europeia?",a:"euro"},
+          {q:"Pandemia global de COVID-19 começou em?",a:"2020"},
+          {q:"Acordo climático de Paris foi em?",a:"2015"},
+          {q:"Brexit foi a saída do Reino Unido da?",a:"união europeia"},
+          {q:"ODS são objetivos de desenvolvimento?",a:"sustentável"},
+          {q:"Primavera Árabe começou em?",a:"2010"},
+          {q:"G20 reúne as maiores economias do?",a:"mundo"},
+        ]},
+      ],
+    },
+    {
+      id:"culture", name:"Cultura", emoji:"🎨",
+      color:"#d44dff", glow:"rgba(212,77,255,0.4)",
+      gradient:"linear-gradient(135deg,#d44dff22,#ff4d9422)",
+      phases:[
+        { phase:1, title:"Música Brasileira", questions:[
+          {q:"Pai do baião?",a:"luiz gonzaga"},
+          {q:"Gênero musical criado no Rio no século XIX?",a:"samba"},
+          {q:"Músico que criou a Bossa Nova?",a:"joão gilberto"},
+          {q:"Capital do forró no Brasil?",a:"nordeste"},
+          {q:"Artista do axé music mais famoso dos anos 90?",a:"ivete sangalo"},
+          {q:"Roberto Carlos é rei do?",a:"pop"},
+          {q:"Músico cego do samba?",a:"cartola"},
+          {q:"Chico Buarque ficou famoso durante a?",a:"ditadura"},
+          {q:"Tropicália foi um movimento dos anos?",a:"60"},
+          {q:"Gilberto Gil é oriundo de?",a:"bahia"},
+        ]},
+        { phase:2, title:"Cinema", questions:[
+          {q:"Maior prêmio do cinema mundial?",a:"oscar"},
+          {q:"Festival de cinema mais antigo do mundo?",a:"veneza"},
+          {q:"Diretor de ET e Indiana Jones?",a:"spielberg"},
+          {q:"Filme mais premiado da história do Oscar?",a:"titanic"},
+          {q:"Primeiro filme com som foi em?",a:"1927"},
+          {q:"Irmãos que inventaram o cinema?",a:"lumière"},
+          {q:"Charlie Chaplin era famoso no cinema?",a:"mudo"},
+          {q:"Pixar é um estúdio de animação de qual empresa?",a:"disney"},
+          {q:"Gênero de filmes de monstros japoneses?",a:"tokusatsu"},
+          {q:"Filme brasileiro indicado ao Oscar mais famoso?",a:"cidade de deus"},
+        ]},
+        { phase:3, title:"Literatura", questions:[
+          {q:"Autor de Dom Casmurro?",a:"machado de assis"},
+          {q:"Obra máxima de Dante Alighieri?",a:"divina comédia"},
+          {q:"Autor de Dom Quixote?",a:"cervantes"},
+          {q:"Shakespeare era do período?",a:"renascimento"},
+          {q:"Autora de Orgulho e Preconceito?",a:"jane austen"},
+          {q:"Autor de 1984 e A Revolução dos Bichos?",a:"george orwell"},
+          {q:"Maior poema épico brasileiro?",a:"os lusíadas"},
+          {q:"Harry Potter foi criado por?",a:"j.k. rowling"},
+          {q:"Autor de O Alquimista?",a:"paulo coelho"},
+          {q:"Gabriel García Márquez escreveu?",a:"cem anos de solidão"},
+        ]},
+        { phase:4, title:"Artes Visuais", questions:[
+          {q:"Pintor da Mona Lisa?",a:"da vinci"},
+          {q:"Escultor do Davi?",a:"michelangelo"},
+          {q:"Pintor das telas com relógios derretidos?",a:"dalí"},
+          {q:"Movimento de arte abstrata de Picasso?",a:"cubismo"},
+          {q:"Pintora mexicana famosa pelos autorretratos?",a:"frida kahlo"},
+          {q:"Van Gogh pintou que noite famosa?",a:"noite estrelada"},
+          {q:"Museu de arte mais visitado do mundo?",a:"louvre"},
+          {q:"Impressionismo teve início na?",a:"france"},
+          {q:"Kandinsky foi pioneiro da arte?",a:"abstrata"},
+          {q:"Arte do grafite urbano?",a:"street art"},
+        ]},
+        { phase:5, title:"Esportes", questions:[
+          {q:"País com mais Copas do Mundo?",a:"brasil"},
+          {q:"Quantas Copas o Brasil ganhou?",a:"5"},
+          {q:"Esporte olímpico de verão mais popular?",a:"atletismo"},
+          {q:"Olimpíadas de verão de 2016 foram no?",a:"rio de janeiro"},
+          {q:"Rafael Nadal é famoso no?",a:"tênis"},
+          {q:"Michael Jordan jogava?",a:"basquete"},
+          {q:"Ayrton Senna ganhou quantos títulos de F1?",a:"3"},
+          {q:"Judô é uma arte marcial de origem?",a:"japonesa"},
+          {q:"Pelé nasceu em que estado?",a:"minas gerais"},
+          {q:"Fórmula 1 corre com carros?",a:"monoposto"},
+        ]},
+        { phase:6, title:"Gastronomia", questions:[
+          {q:"Prato símbolo do Brasil?",a:"feijoada"},
+          {q:"Pizza tem origem na?",a:"itália"},
+          {q:"Sushi é da culinária?",a:"japonesa"},
+          {q:"Croissant é típico da?",a:"france"},
+          {q:"Tempero símbolo da culinária nordestina?",a:"coentro"},
+          {q:"Bebida nacional do Brasil?",a:"cachaça"},
+          {q:"Chocolate vem do?",a:"cacau"},
+          {q:"Café brasileiro mais famoso é o?",a:"arábica"},
+          {q:"Paella é prato típico da?",a:"espanha"},
+          {q:"Churrasco gaúcho usa principalmente que carne?",a:"boi"},
+        ]},
+        { phase:7, title:"Religião & Filosofia", questions:[
+          {q:"Religião mais praticada no Brasil?",a:"catolicismo"},
+          {q:"Livro sagrado do Islã?",a:"alcorão"},
+          {q:"Fundador do budismo?",a:"buda"},
+          {q:"Filosofia 'penso logo existo' de?",a:"descartes"},
+          {q:"Platão foi discípulo de?",a:"sócrates"},
+          {q:"Nietzsche disse 'Deus está?'",a:"morto"},
+          {q:"Religião de origem africana no Brasil?",a:"candomblé"},
+          {q:"Teologia da libertação surgiu na?",a:"america latina"},
+          {q:"Religião que acredita em karma?",a:"hinduísmo"},
+          {q:"Existencialismo é associado a?",a:"sartre"},
+        ]},
+        { phase:8, title:"Folclore Brasileiro", questions:[
+          {q:"Criatura do folclore que vive no fundo do rio?",a:"iara"},
+          {q:"Saci tem quantas pernas?",a:"uma"},
+          {q:"Curupira tem os pés ao?",a:"contrário"},
+          {q:"Boitatá é uma cobra de?",a:"fogo"},
+          {q:"Lobisomem se transforma em noite de?",a:"lua cheia"},
+          {q:"Caipora protege os?",a:"animais da floresta"},
+          {q:"Mula-sem-cabeça é uma lenda do?",a:"centro-oeste"},
+          {q:"Bumba-meu-boi é festa típica do?",a:"maranhão"},
+          {q:"Festa junina celebra santos do mês de?",a:"junho"},
+          {q:"Mapinguari é uma criatura da?",a:"amazônia"},
+        ]},
+        { phase:9, title:"Língua Portuguesa", questions:[
+          {q:"Língua oficial do Brasil?",a:"português"},
+          {q:"Quantos países falam português oficialmente?",a:"9"},
+          {q:"Plural de cidadão?",a:"cidadãos"},
+          {q:"Acento que indica som fechado?",a:"circunflexo"},
+          {q:"Artigo definido masculino singular?",a:"o"},
+          {q:"Verbo no infinitivo termina em?",a:"ar er ir"},
+          {q:"Metáfora é uma figura de?",a:"linguagem"},
+          {q:"Sinônimo de alegre?",a:"feliz"},
+          {q:"Antônimo de frio?",a:"quente"},
+          {q:"Sujeito que recebe a ação do verbo?",a:"passivo"},
+        ]},
+        { phase:10, title:"Pop Culture", questions:[
+          {q:"Trilogia épica de Tolkien?",a:"senhor dos anéis"},
+          {q:"Universo de heróis mais popular do cinema?",a:"marvel"},
+          {q:"Personagem de anime mais famoso no Brasil?",a:"goku"},
+          {q:"Jogo mais vendido da Nintendo de todos os tempos?",a:"mario"},
+          {q:"Rede social de fotos mais popular?",a:"instagram"},
+          {q:"Plataforma de vídeos do Google?",a:"youtube"},
+          {q:"App de mensagens mais usado no Brasil?",a:"whatsapp"},
+          {q:"Streamer mais famoso do Brasil?",a:"gaules"},
+          {q:"K-pop é a música pop de?",a:"coreia"},
+          {q:"Personagem de Disney que mora no castelo?",a:"cinderela"},
+        ]},
+      ],
+    },
+  ],
+};
+
+const MAX_ERRORS = 3;
+const TIMER_SECONDS = 15;
+
+function loadProgress() {
+  try { return JSON.parse(localStorage.getItem("quiz_progress") || "{}"); }
+  catch { return {}; }
+}
+function saveProgress(data) {
+  localStorage.setItem("quiz_progress", JSON.stringify(data));
+}
+function normalize(str) {
+  return str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").trim();
+}
+
+function Timer({ seconds, total, color }) {
+  const pct = (seconds / total) * 100;
+  const urgent = seconds <= 5;
+  return (
+    <div className="timer-wrap">
+      <svg viewBox="0 0 44 44" className="timer-svg">
+        <circle cx="22" cy="22" r="19" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="3"/>
+        <circle cx="22" cy="22" r="19" fill="none"
+          stroke={urgent ? "#ff4444" : color} strokeWidth="3"
+          strokeDasharray={`${2*Math.PI*19}`}
+          strokeDashoffset={`${2*Math.PI*19*(1-pct/100)}`}
+          strokeLinecap="round"
+          style={{transition:"stroke-dashoffset 1s linear",transform:"rotate(-90deg)",transformOrigin:"center"}}
+        />
+      </svg>
+      <span className="timer-num" style={{color: urgent?"#ff4444":color}}>{seconds}</span>
+    </div>
+  );
+}
+
+function NichoCard({ nicho, unlockedPhase, onClick }) {
+  return (
+    <button className="nicho-card" onClick={() => onClick(nicho)}
+      style={{"--nc":nicho.color,"--glow":nicho.glow,background:nicho.gradient}}>
+      <span className="nicho-emoji">{nicho.emoji}</span>
+      <span className="nicho-name">{nicho.name}</span>
+      <span className="nicho-progress">{unlockedPhase}/{nicho.phases.length} fases</span>
+      <div className="nicho-glow"/>
+    </button>
+  );
+}
+
+function PhaseSelector({ nicho, unlockedPhase, onSelect, onBack }) {
+  return (
+    <div className="phase-selector">
+      <button className="back-btn" onClick={onBack}>← Voltar</button>
+      <div className="phase-header">
+        <span style={{fontSize:40}}>{nicho.emoji}</span>
+        <h2 style={{color:nicho.color}}>{nicho.name}</h2>
+      </div>
+      <div className="phase-grid">
+        {nicho.phases.map((p,i) => {
+          const locked = i > unlockedPhase;
+          const done = i < unlockedPhase;
+          return (
+            <button key={p.phase}
+              className={`phase-btn ${locked?"locked":""} ${done?"done":""}`}
+              style={{"--nc":nicho.color}}
+              disabled={locked}
+              onClick={() => !locked && onSelect(i)}>
+              <span className="phase-num">{locked?"🔒":done?"✅":p.phase}</span>
+              <span className="phase-title">{p.title}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function GameBoard({ nicho, phaseIdx, onComplete, onFail, onBack }) {
+  const phase = nicho.phases[phaseIdx];
+  const [qIdx, setQIdx] = useState(0);
+  const [input, setInput] = useState("");
+  const [errors, setErrors] = useState(0);
+  const [score, setScore] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(TIMER_SECONDS);
+  const [feedback, setFeedback] = useState(null);
+  const [shakeInput, setShakeInput] = useState(false);
+  const inputRef = useRef(null);
+  const timerRef = useRef(null);
+  const current = phase.questions[qIdx];
+
+  const nextQuestion = useCallback((isCorrect) => {
+    clearInterval(timerRef.current);
+    const nextIdx = qIdx + 1;
+    setTimeout(() => {
+      setFeedback(null); setInput(""); setTimeLeft(TIMER_SECONDS);
+      if (nextIdx >= phase.questions.length) onComplete(score + (isCorrect?10:0));
+      else setQIdx(nextIdx);
+    }, 900);
+  }, [qIdx, phase.questions.length, score, onComplete]);
+
+  const handleWrong = useCallback(() => {
+    const ne = errors + 1;
+    setErrors(ne); setFeedback("wrong"); setShakeInput(true);
+    setTimeout(() => setShakeInput(false), 600);
+    if (ne >= MAX_ERRORS) { clearInterval(timerRef.current); setTimeout(() => onFail(), 900); }
+    else nextQuestion(false);
+  }, [errors, nextQuestion, onFail]);
+
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setTimeLeft(t => { if(t<=1){handleWrong();return TIMER_SECONDS;} return t-1; });
+    }, 1000);
+    return () => clearInterval(timerRef.current);
+  }, [qIdx, handleWrong]);
+
+  useEffect(() => { inputRef.current?.focus(); }, [qIdx]);
+
+  const handleSubmit = () => {
+    const ans = normalize(input);
+    const correct = normalize(current.a);
+    if (ans===correct || correct.split(" ").some(w=>w.length>3&&ans===w)) {
+      setScore(s=>s+10); setFeedback("correct"); nextQuestion(true);
+    } else handleWrong();
+  };
+
+  return (
+    <div className="gameboard" style={{"--nc":nicho.color,"--glow":nicho.glow}}>
+      <div className="gb-header">
+        <button className="back-btn-sm" onClick={onBack}>✕</button>
+        <div className="gb-meta">
+          <span style={{color:nicho.color}}>{nicho.emoji} {nicho.name}</span>
+          <span className="gb-phase">Fase {phaseIdx+1} · {phase.title}</span>
+        </div>
+        <div className="gb-score">{score}pts</div>
+      </div>
+      <div className="progress-bar">
+        <div className="progress-fill" style={{width:`${(qIdx/phase.questions.length)*100}%`,background:nicho.color}}/>
+      </div>
+      <div className="errors-row">
+        {Array.from({length:MAX_ERRORS}).map((_,i)=>(
+          <span key={i} className={`error-dot ${i<errors?"active":""}`}>❌</span>
+        ))}
+        <span className="q-counter">{qIdx+1}/{phase.questions.length}</span>
+      </div>
+      <div className={`question-card ${feedback==="correct"?"flash-green":feedback==="wrong"?"flash-red":""}`}>
+        <Timer seconds={timeLeft} total={TIMER_SECONDS} color={nicho.color}/>
+        <p className="question-text">{current.q}</p>
+        {feedback==="correct"&&<div className="feedback-badge correct">✓ Correto!</div>}
+        {feedback==="wrong"&&<div className="feedback-badge wrong">✗ {current.a}</div>}
+      </div>
+      <div className={`answer-wrap ${shakeInput?"shake":""}`}>
+        <input ref={inputRef} value={input}
+          onChange={e=>setInput(e.target.value)}
+          onKeyDown={e=>e.key==="Enter"&&handleSubmit()}
+          placeholder="Digite sua resposta..."
+          className="answer-input" style={{"--nc":nicho.color}}
+          disabled={!!feedback} autoComplete="off" autoCorrect="off" spellCheck={false}
+        />
+        <button className="send-btn" style={{background:nicho.color}}
+          onClick={handleSubmit} disabled={!!feedback||!input.trim()}>➜</button>
+      </div>
+      <p className="hint-text">Pressione Enter ou clique ➜ para responder</p>
+    </div>
+  );
+}
+
+function ResultScreen({ type, score, nicho, phase, onRetry, onHome }) {
+  const win = type==="win";
+  return (
+    <div className="result-screen" style={{"--nc":nicho.color,"--glow":nicho.glow}}>
+      <div className="result-icon">{win?"🏆":"💀"}</div>
+      <h2 className="result-title" style={{color:win?nicho.color:"#ff4444"}}>
+        {win?"Fase Concluída!":"Game Over"}
+      </h2>
+      <p className="result-sub">
+        {win?`Você completou a fase ${phase+1} de ${nicho.name}!`:`Você errou ${MAX_ERRORS} vezes.`}
+      </p>
+      <div className="result-score" style={{borderColor:nicho.color}}>
+        <span className="rs-label">Pontuação</span>
+        <span className="rs-num" style={{color:nicho.color}}>{score}</span>
+      </div>
+      <div className="result-btns">
+        <button className="r-btn primary" style={{background:nicho.color}} onClick={onRetry}>
+          {win?"Próxima Fase":"Tentar Novamente"}
+        </button>
+        <button className="r-btn secondary" onClick={onHome}>Início</button>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState("splash");
+  const [selectedNicho, setSelectedNicho] = useState(null);
+  const [selectedPhase, setSelectedPhase] = useState(0);
+  const [result, setResult] = useState(null);
+  const [progress, setProgress] = useState(loadProgress);
+  const [totalScore, setTotalScore] = useState(0);
+
+  const getUnlockedPhase = (id) => progress[id] ?? 0;
+
+  const updateProgress = (id, phaseIdx) => {
+    const current = getUnlockedPhase(id);
+    if (phaseIdx >= current) {
+      const next = {...progress, [id]: phaseIdx+1};
+      setProgress(next); saveProgress(next);
+    }
+  };
+
+  const handleRetry = () => {
+    if (result==="win") {
+      const next = selectedPhase+1;
+      const nicho = GAME_DATA.nichos.find(n=>n.id===selectedNicho.id);
+      if (next < nicho.phases.length) { setSelectedPhase(next); setScreen("game"); }
+      else setScreen("nicho_select");
+    } else setScreen("game");
+  };
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        body{background:#050510;color:#fff;font-family:'Exo 2',sans-serif;min-height:100dvh;overflow-x:hidden}
+        .app{min-height:100dvh;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+          background:radial-gradient(ellipse 80% 50% at 50% -10%,#1a0a3a55,transparent),
+          radial-gradient(ellipse 60% 40% at 80% 80%,#0a1a3a44,transparent),#050510;padding:0 0 40px}
+        .splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:32px 24px;text-align:center;gap:24px}
+        .splash-logo{font-size:72px;animation:float 3s ease-in-out infinite}
+        @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
+        .splash-title{font-size:clamp(32px,8vw,52px);font-weight:900;background:linear-gradient(135deg,#00e5ff,#d44dff,#ffb703);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.1}
+        .splash-sub{font-size:15px;color:rgba(255,255,255,0.5);max-width:320px;line-height:1.6}
+        .stats-row{display:flex;gap:20px;flex-wrap:wrap;justify-content:center}
+        .stat-chip{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);border-radius:100px;padding:8px 18px;font-size:13px;color:rgba(255,255,255,0.7);font-family:'JetBrains Mono',monospace}
+        .stat-chip strong{color:#fff}
+        .play-btn{background:linear-gradient(135deg,#00e5ff,#d44dff);border:none;border-radius:100px;padding:18px 56px;font-size:18px;font-weight:800;color:#000;cursor:pointer;font-family:'Exo 2',sans-serif;box-shadow:0 0 40px rgba(212,77,255,0.4);transition:transform .15s,box-shadow .15s}
+        .play-btn:hover{transform:scale(1.04);box-shadow:0 0 60px rgba(212,77,255,0.6)}
+        .play-btn:active{transform:scale(0.97)}
+        .progress-info{font-size:12px;color:rgba(255,255,255,0.3);font-family:'JetBrains Mono',monospace}
+        .nicho-select{width:100%;max-width:480px;padding:24px 16px;display:flex;flex-direction:column;gap:16px}
+        .screen-title{font-size:22px;font-weight:800;text-align:center;padding:12px 0 4px;color:rgba(255,255,255,0.9)}
+        .nicho-card{position:relative;overflow:hidden;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:20px 24px;display:flex;align-items:center;gap:16px;cursor:pointer;transition:transform .15s,border-color .2s;width:100%;text-align:left;box-shadow:0 4px 24px rgba(0,0,0,0.3)}
+        .nicho-card:hover{transform:translateY(-2px);border-color:var(--nc)}
+        .nicho-card:active{transform:scale(0.98)}
+        .nicho-emoji{font-size:36px;flex-shrink:0}
+        .nicho-name{font-size:20px;font-weight:800;color:var(--nc);flex:1}
+        .nicho-progress{font-size:12px;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace}
+        .nicho-glow{position:absolute;inset:0;background:radial-gradient(circle at 90% 50%,var(--glow),transparent 60%);pointer-events:none}
+        .phase-selector{width:100%;max-width:480px;padding:16px;display:flex;flex-direction:column;gap:16px}
+        .phase-header{display:flex;align-items:center;gap:12px;padding:8px 0}
+        .phase-header h2{font-size:24px;font-weight:900}
+        .phase-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+        .phase-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:14px 12px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:all .15s;text-align:left;color:#fff;font-family:'Exo 2',sans-serif}
+        .phase-btn:hover:not(.locked){border-color:var(--nc);background:rgba(255,255,255,0.08)}
+        .phase-btn.locked{opacity:.35;cursor:not-allowed}
+        .phase-btn.done{border-color:rgba(105,255,71,0.4)}
+        .phase-num{font-size:20px;font-weight:900;font-family:'JetBrains Mono',monospace}
+        .phase-title{font-size:11px;color:rgba(255,255,255,0.6);line-height:1.3}
+        .back-btn{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:100px;padding:8px 20px;color:rgba(255,255,255,0.7);cursor:pointer;font-family:'Exo 2',sans-serif;font-size:14px;align-self:flex-start;transition:all .15s}
+        .back-btn:hover{background:rgba(255,255,255,0.12)}
+        .back-btn-sm{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:50%;width:36px;height:36px;color:rgba(255,255,255,0.7);cursor:pointer;font-size:14px;flex-shrink:0;transition:all .15s}
+        .gameboard{width:100%;max-width:480px;padding:16px;display:flex;flex-direction:column;gap:16px;min-height:100dvh}
+        .gb-header{display:flex;align-items:center;gap:12px;padding:8px 0}
+        .gb-meta{flex:1;display:flex;flex-direction:column;font-size:14px;font-weight:700}
+        .gb-phase{font-size:11px;color:rgba(255,255,255,0.5);font-weight:400}
+        .gb-score{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:700;color:var(--nc)}
+        .progress-bar{height:4px;background:rgba(255,255,255,0.08);border-radius:100px;overflow:hidden}
+        .progress-fill{height:100%;border-radius:100px;transition:width .4s ease}
+        .errors-row{display:flex;align-items:center;gap:8px}
+        .error-dot{font-size:16px;opacity:.2;transition:opacity .3s}
+        .error-dot.active{opacity:1}
+        .q-counter{margin-left:auto;font-family:'JetBrains Mono',monospace;font-size:12px;color:rgba(255,255,255,0.4)}
+        .question-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:24px;padding:28px 24px;display:flex;flex-direction:column;align-items:center;gap:20px;text-align:center;min-height:220px;justify-content:center;transition:border-color .3s,background .3s;backdrop-filter:blur(12px)}
+        .question-card.flash-green{border-color:#69ff47;background:rgba(105,255,71,0.06)}
+        .question-card.flash-red{border-color:#ff4444;background:rgba(255,68,68,0.06)}
+        .question-text{font-size:clamp(16px,4.5vw,22px);font-weight:700;line-height:1.5;color:rgba(255,255,255,0.95)}
+        .timer-wrap{position:relative;width:56px;height:56px;flex-shrink:0}
+        .timer-svg{width:56px;height:56px}
+        .timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:16px;font-weight:700}
+        .feedback-badge{font-size:14px;font-weight:800;padding:6px 16px;border-radius:100px;animation:popIn .2s ease}
+        .feedback-badge.correct{background:rgba(105,255,71,0.15);color:#69ff47;border:1px solid #69ff47}
+        .feedback-badge.wrong{background:rgba(255,68,68,0.15);color:#ff6666;border:1px solid #ff4444}
+        @keyframes popIn{from{transform:scale(0.7);opacity:0}to{transform:scale(1);opacity:1}}
+        .answer-wrap{display:flex;gap:10px;align-items:stretch}
+        .answer-wrap.shake{animation:shake .5s ease}
+        @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}
+        .answer-input{flex:1;background:rgba(255,255,255,0.06);border:1.5px solid rgba(255,255,255,0.12);border-radius:16px;padding:14px 18px;color:#fff;font-size:16px;font-family:'Exo 2',sans-serif;outline:none;transition:border-color .2s}
+        .answer-input:focus{border-color:var(--nc)}
+        .answer-input::placeholder{color:rgba(255,255,255,0.25)}
+        .send-btn{border:none;border-radius:16px;padding:14px 20px;font-size:20px;cursor:pointer;transition:all .15s;color:#000;font-weight:900}
+        .send-btn:hover:not(:disabled){filter:brightness(1.1) scale(1.04)}
+        .send-btn:disabled{opacity:.4;cursor:not-allowed}
+        .hint-text{font-size:11px;color:rgba(255,255,255,0.25);text-align:center}
+        .result-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;padding:40px 24px;gap:20px;text-align:center;width:100%;max-width:480px;margin:0 auto}
+        .result-icon{font-size:80px;animation:float 2s ease-in-out infinite}
+        .result-title{font-size:36px;font-weight:900}
+        .result-sub{font-size:15px;color:rgba(255,255,255,0.5)}
+        .result-score{border:2px solid;border-radius:20px;padding:20px 48px;display:flex;flex-direction:column;gap:4px;background:rgba(255,255,255,0.04)}
+        .rs-label{font-size:12px;color:rgba(255,255,255,0.4);font-family:'JetBrains Mono',monospace}
+        .rs-num{font-size:48px;font-weight:900;font-family:'JetBrains Mono',monospace}
+        .result-btns{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px}
+        .r-btn{border:none;border-radius:100px;padding:16px;font-size:16px;font-weight:800;cursor:pointer;font-family:'Exo 2',sans-serif;transition:all .15s}
+        .r-btn.primary{color:#000;box-shadow:0 0 30px var(--glow)}
+        .r-btn.primary:hover{filter:brightness(1.1);transform:scale(1.02)}
+        .r-btn.secondary{background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:#fff}
+        .r-btn.secondary:hover{background:rgba(255,255,255,0.12)}
+      `}</style>
+      <div className="app">
+        {screen==="splash"&&(
+          <div className="splash">
+            <div className="splash-logo">🧠</div>
+            <h1 className="splash-title">Quiz Master</h1>
+            <p className="splash-sub">400 desafios em 4 nichos. Prove seu conhecimento fase a fase.</p>
+            <div className="stats-row">
+              <span className="stat-chip"><strong>4</strong> nichos</span>
+              <span className="stat-chip"><strong>40</strong> fases</span>
+              <span className="stat-chip"><strong>400</strong> perguntas</span>
+            </div>
+            <button className="play-btn" onClick={()=>setScreen("nicho_select")}>JOGAR AGORA</button>
+            {Object.keys(progress).length>0&&(
+              <p className="progress-info">✓ Progresso salvo: {GAME_DATA.nichos.map(n=>`${n.name} F${getUnlockedPhase(n.id)}`).join(" · ")}</p>
+            )}
+          </div>
+        )}
+        {screen==="nicho_select"&&(
+          <div className="nicho-select">
+            <p className="screen-title">Escolha seu Nicho</p>
+            {GAME_DATA.nichos.map(n=>(
+              <NichoCard key={n.id} nicho={n} unlockedPhase={getUnlockedPhase(n.id)}
+                onClick={nicho=>{setSelectedNicho(nicho);setScreen("phases");}}/>
+            ))}
+            <button className="back-btn" style={{alignSelf:"center"}} onClick={()=>setScreen("splash")}>← Voltar</button>
+          </div>
+        )}
+        {screen==="phases"&&selectedNicho&&(
+          <PhaseSelector nicho={selectedNicho} unlockedPhase={getUnlockedPhase(selectedNicho.id)}
+            onSelect={i=>{setSelectedPhase(i);setScreen("game");}}
+            onBack={()=>setScreen("nicho_select")}/>
+        )}
+        {screen==="game"&&selectedNicho&&(
+          <GameBoard key={`${selectedNicho.id}-${selectedPhase}`}
+            nicho={selectedNicho} phaseIdx={selectedPhase}
+            onComplete={s=>{updateProgress(selectedNicho.id,selectedPhase);setTotalScore(s);setResult("win");setScreen("result");}}
+            onFail={()=>{setResult("fail");setScreen("result");}}
+            onBack={()=>setScreen("phases")}/>
+        )}
+        {screen==="result"&&selectedNicho&&(
+          <ResultScreen type={result} score={totalScore}
+            nicho={selectedNicho} phase={selectedPhase}
+            onRetry={handleRetry} onHome={()=>setScreen("nicho_select")}/>
+        )}
+      </div>
+    </>
+  );
+}
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<App/>);
+</script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then(r => console.log('SW OK:', r.scope))
+        .catch(e => console.error('SW erro:', e));
+    });
+  }
+</script>
+</body>
+</html>
